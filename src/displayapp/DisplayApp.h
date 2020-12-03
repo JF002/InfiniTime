@@ -87,6 +87,10 @@ namespace Pinetime {
         Pinetime::Controllers::NotificationManager& notificationManager;
         Pinetime::Controllers::FirmwareValidator validator;
         TouchModes touchMode = TouchModes::Gestures;
+
+        bool isLeftHandWorn;
+        void SetHandOrientation(bool left_hand);
+        void SetScreenCoordinates(Drivers::Cst816S::TouchInfos& touch_info);
     };
   }
 }

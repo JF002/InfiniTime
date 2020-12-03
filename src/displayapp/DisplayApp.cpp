@@ -21,6 +21,9 @@
 #include "drivers/Watchdog.h"
 #include "systemtask/SystemTask.h"
 
+// most people are right-handed and wear the watch on left land
+#define DEFAULT_LEFT_HAND_ORIENTATION true
+
 using namespace Pinetime::Applications;
 
 DisplayApp::DisplayApp(Drivers::St7789 &lcd, Components::LittleVgl &lvgl, Drivers::Cst816S &touchPanel,
@@ -64,12 +67,14 @@ void DisplayApp::Process(void *instance) {
 }
 
 void DisplayApp::InitHw() {
+  SetHandOrientation(DEFAULT_LEFT_HAND_ORIENTATION);
   brightnessController.Init();
 }
 
 uint32_t acc = 0;
 uint32_t count = 0;
 bool toggle = true;
+
 void DisplayApp::Refresh() {
   TickType_t queueTimeout;
   switch (state) {
@@ -177,6 +182,7 @@ void DisplayApp::Refresh() {
   if(state != States::Idle && touchMode == TouchModes::Polling) {
     auto info = touchPanel.GetTouchInfo();
     if(info.action == 2) {// 2 = contact
+      SetScreenCoordinates(info);
       if(!currentScreen->OnTouchEvent(info.x, info.y)) {
         lvgl.SetNewTapEvent(info.x, info.y);
       }
@@ -232,21 +238,23 @@ TouchEvents DisplayApp::OnTouchEvent() {
   if(info.isTouch) {
     switch(info.gesture) {
       case Pinetime::Drivers::Cst816S::Gestures::SingleTap:
-        if(touchMode == TouchModes::Gestures)
+        if(touchMode == TouchModes::Gestures) {
+          SetScreenCoordinates(info);
           lvgl.SetNewTapEvent(info.x, info.y);
+        }
         return TouchEvents::Tap;
       case Pinetime::Drivers::Cst816S::Gestures::LongPress:
         return TouchEvents::LongTap;
       case Pinetime::Drivers::Cst816S::Gestures::DoubleTap:
         return TouchEvents::DoubleTap;
       case Pinetime::Drivers::Cst816S::Gestures::SlideRight:
-        return TouchEvents::SwipeRight;
+        return (isLeftHandWorn ? TouchEvents::SwipeLeft : TouchEvents::SwipeRight);
       case Pinetime::Drivers::Cst816S::Gestures::SlideLeft:
-        return TouchEvents::SwipeLeft;
+        return (isLeftHandWorn ? TouchEvents::SwipeRight : TouchEvents::SwipeLeft);
       case Pinetime::Drivers::Cst816S::Gestures::SlideDown:
-        return TouchEvents::SwipeDown;
+        return (isLeftHandWorn ? TouchEvents::SwipeUp : TouchEvents::SwipeDown);
       case Pinetime::Drivers::Cst816S::Gestures::SlideUp:
-        return TouchEvents::SwipeUp;
+        return (isLeftHandWorn ? TouchEvents::SwipeDown : TouchEvents::SwipeUp);
       case Pinetime::Drivers::Cst816S::Gestures::None:
       default:
         return TouchEvents::None;
@@ -274,4 +282,29 @@ void DisplayApp::SetFullRefresh(DisplayApp::FullRefreshDirections direction) {
 
 void DisplayApp::SetTouchMode(DisplayApp::TouchModes mode) {
   touchMode = mode;
+}
+
+/**
+ * @brief Set the user's hand wearing orientation.
+ *
+ * @param left_hand True means watch is worn in left hand, false means right hand.
+ */
+void DisplayApp::SetHandOrientation(bool left_hand) {
+  isLeftHandWorn = left_hand;
+
+  // LCD: mirror x/y memory positions
+  lcd.SetOrientation(left_hand ? lcd.Orientation_180 : lcd.Orientation_0);
+}
+
+/**
+ * @brief Translate touch coordinates to screen ones depending on display orientation.
+ *
+ * @param touch_info
+ */
+void DisplayApp::SetScreenCoordinates(Drivers::Cst816S::TouchInfos& touch_info) {
+  // mirror x/y tap coordinates
+  if (isLeftHandWorn) {
+    touch_info.x = 240 - touch_info.x;
+    touch_info.y = 240 - touch_info.y;
+  }
 }
