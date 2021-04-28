@@ -1,3 +1,8 @@
+---
+layout: page
+title: About
+nav_order: 0
+---
 
 # PineTime
 
@@ -12,7 +17,7 @@
 The **Pinetime** smartwatch is built around the NRF52832 MCU (512KB Flash, 64KB RAM), a 240*240 LCD display driven by the ST7789 controller, an accelerometer, a heart rate sensor, and a vibration motor.
 
 # InfiniTime
-![InfiniTime logo](docs/images/logo.svg "InfiniTime Logo")
+![InfiniTime logo](images/logo.svg "InfiniTime Logo")
 
 The goal of this project is to design an open-source firmware for the Pinetime smartwatch :
 
@@ -24,7 +29,7 @@ The goal of this project is to design an open-source firmware for the Pinetime s
 
 ## Overview
 
-![Pinetime screens](docs/images/1.0.0/collage.png "PinetimeScreens")
+![Pinetime screens](images/1.0.0/collage.png "PinetimeScreens")
 
 As of now, here is the list of achievements of this project:
 
@@ -72,37 +77,37 @@ As of now, here is the list of achievements of this project:
 ## Documentation
 
 ### Getting started
- - [Flash, upgrade (OTA), time synchronization,...](docs/gettingStarted/gettingStarted.md)
+ - [Flash, upgrade (OTA), time synchronization,...](gettingStarted/gettingStarted.html)
 
 ### Develop
- - [Generate the fonts and symbols](src/displayapp/fonts/README.md)
+ - [Generate the fonts and symbols](src/displayapp/fonts/Readme.html)
  - [Creating a stopwatch in Pinetime(article)](https://pankajraghav.com/2021/04/03/PINETIME-STOPCLOCK.html)
 
 ### Build, flash and debug
- - [Project branches](docs/branches.md)
- - [Versioning](docs/versioning.md)
- - [Files included in the release notes](docs/filesInReleaseNotes.md)
- - [Build the project](docs/buildAndProgram.md)
- - [Flash the firmware using OpenOCD and STLinkV2](docs/openOCD.md)
- - [Build the project with Docker](docs/buildWithDocker.md)
- - [Bootloader, OTA and DFU](./bootloader/README.md)
- - [Stub using NRF52-DK](./docs/PinetimeStubWithNrf52DK.md)
+ - [Project branches](branches.html)
+ - [Versioning](versioning.html)
+ - [Files included in the release notes](filesInReleaseNotes.html)
+ - [Build the project](buildAndProgram.html)
+ - [Flash the firmware using OpenOCD and STLinkV2](openOCD.html)
+ - [Build the project with Docker](buildWithDocker.html)
+ - [Bootloader, OTA and DFU](bootloader/bootloader.html)
+ - [Stub using NRF52-DK](./PinetimeStubWithNrf52DK.html)
  - Logging with JLink RTT.
  - Using files from the releases
 
 ### Contribute
- - [How to contribute ?](docs/contribute.md)
+ - [How to contribute ?](contribute.html)
 
 ### API
- - [BLE implementation and API](./docs/ble.md)
+ - [BLE implementation and API](./ble.html)
 
 ### Architecture and technical topics
- - [Memory analysis](./docs/MemoryAnalysis.md)
+ - [Memory analysis](./MemoryAnalysis.html)
 
 ### Using the firmware
- - [Integration with Gadgetbridge](docs/companionapps/Gadgetbridge.md)
- - [Integration with AmazFish](docs/companionapps/Amazfish.md)
- - [Firmware update, OTA](docs/companionapps/NrfconnectOTA.md)
+ - [Integration with Gadgetbridge](companionapps/Gadgetbridge.html)
+ - [Integration with AmazFish](companionapps/Amazfish.html)
+ - [Firmware update, OTA](companionapps/NrfconnectOTA.html)
 
 
 ## TODO - contribute
