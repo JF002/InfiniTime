@@ -62,7 +62,7 @@ std::unique_ptr<Screen> ApplicationList::CreateScreen2() {
     {Symbols::paintbrush, Apps::Paint},
     {Symbols::paddle, Apps::Paddle},
     {"2", Apps::Twos},
-    {"", Apps::None},
+    {Symbols::qrcode, Apps::Qr},
     {"", Apps::None},
     {"", Apps::None},
   }};

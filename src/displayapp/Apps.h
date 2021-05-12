@@ -21,6 +21,7 @@ namespace Pinetime {
       Navigation,
       StopWatch,
       Motion,
+      Qr,
       QuickSettings,
       Settings,
       SettingWatchFace,
