@@ -404,10 +404,12 @@ list(APPEND SOURCE_FILES
         displayapp/screens/HeartRate.cpp
         displayapp/screens/Motion.cpp
         displayapp/screens/FlashLight.cpp
+        displayapp/screens/settings/SettingsList.cpp
         displayapp/screens/List.cpp
         displayapp/screens/BatteryInfo.cpp
         displayapp/screens/Steps.cpp
-        displayapp/screens/Timer.cpp
+        displayapp/screens/Timer/Timer.cpp
+        displayapp/screens/Timer/TimerList.cpp
 
         ## Settings
         displayapp/screens/settings/QuickSettings.cpp
@@ -593,7 +595,8 @@ set(INCLUDE_FILES
         displayapp/screens/Notifications.h
         displayapp/screens/HeartRate.h
         displayapp/screens/Motion.h
-        displayapp/screens/Timer.h
+        displayapp/screens/Timer/Timer.h
+        displayapp/screens/Timer/TimerList.h
         drivers/St7789.h
         drivers/SpiNorFlash.h
         drivers/SpiMaster.h
