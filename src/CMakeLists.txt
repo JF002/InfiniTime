@@ -405,6 +405,7 @@ list(APPEND SOURCE_FILES
         displayapp/screens/Label.cpp
         displayapp/screens/FirmwareUpdate.cpp
         displayapp/screens/Music.cpp
+        displayapp/screens/Weather.cpp
         displayapp/screens/Navigation.cpp
         displayapp/screens/Metronome.cpp
         displayapp/screens/Motion.cpp
@@ -463,6 +464,7 @@ list(APPEND SOURCE_FILES
         components/ble/CurrentTimeService.cpp
         components/ble/AlertNotificationService.cpp
         components/ble/MusicService.cpp
+        components/ble/weather/WeatherService.cpp
         components/ble/NavigationService.cpp
         displayapp/fonts/lv_font_navi_80.c
         components/ble/BatteryInformationService.cpp
@@ -618,22 +620,23 @@ set(INCLUDE_FILES
         drivers/Bma421_C/bma4.c
         drivers/Bma421_C/bma423.c
         components/battery/BatteryController.h
-        components/ble/BleController.h
-        components/ble/NotificationManager.h
         components/datetime/DateTimeController.h
         components/brightness/BrightnessController.h
         components/motion/MotionController.h
+        components/firmwarevalidator/FirmwareValidator.h
+        components/ble/BleController.h
+        components/ble/NotificationManager.h
         components/ble/NimbleController.h
         components/ble/DeviceInformationService.h
         components/ble/CurrentTimeClient.h
         components/ble/AlertNotificationClient.h
         components/ble/DfuService.h
-        components/firmwarevalidator/FirmwareValidator.h
         components/ble/BatteryInformationService.h
         components/ble/ImmediateAlertService.h
         components/ble/ServiceDiscovery.h
         components/ble/BleClient.h
         components/ble/HeartRateService.h
+        components/ble/weather/WeatherService.h
         components/settings/Settings.h
         components/timer/TimerController.h
         drivers/Cst816s.h
