@@ -19,6 +19,7 @@
 #include "NavigationService.h"
 #include "ServiceDiscovery.h"
 #include "HeartRateService.h"
+#include "weather/WeatherService.h"
 
 namespace Pinetime {
   namespace Drivers {
@@ -86,6 +87,7 @@ namespace Pinetime {
       AlertNotificationClient alertNotificationClient;
       CurrentTimeService currentTimeService;
       MusicService musicService;
+      WeatherService weatherService;
       NavigationService navService;
       BatteryInformationService batteryInformationService;
       ImmediateAlertService immediateAlertService;
