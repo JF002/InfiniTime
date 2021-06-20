@@ -7,6 +7,7 @@
 #include "BleIcon.h"
 #include "NotificationIcon.h"
 #include "Symbols.h"
+#include "components/settings/Settings.h"
 #include "components/battery/BatteryController.h"
 #include "components/motion/MotionController.h"
 #include "components/ble/BleController.h"
@@ -35,10 +36,10 @@ Clock::Clock(DisplayApp* app,
     motionController {motionController},
     screen {[this, &settingsController]() {
       switch (settingsController.GetClockFace()) {
-        case 0:
+        case Controllers::Settings::ClockFace::Digital:
           return WatchFaceDigitalScreen();
           break;
-        case 1:
+        case Controllers::Settings::ClockFace::Analog:
           return WatchFaceAnalogScreen();
           break;
       }
