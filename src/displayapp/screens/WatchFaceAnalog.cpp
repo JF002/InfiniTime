@@ -4,6 +4,7 @@
 #include "BleIcon.h"
 #include "Symbols.h"
 #include "NotificationIcon.h"
+#include "components/settings/Settings.h"
 
 #include <cmath>
 
@@ -33,12 +34,11 @@ int16_t coordinate_y_relocate(int16_t y) {
 
 WatchFaceAnalog::WatchFaceAnalog(Pinetime::Applications::DisplayApp* app,
                                  Controllers::DateTimeController const& dateTimeController,
-                                 Controllers::Battery& batteryController,
+                                 Controllers::Battery const& batteryController,
                                  Controllers::Ble& bleController,
                                  Controllers::NotificationManager& notificationManager,
                                  Controllers::Settings& settingsController)
-  : WatchFaceBase{app, dateTimeController},
-    batteryController {batteryController},
+  : WatchFaceBase{app, dateTimeController, batteryController},
     bleController {bleController},
     notificationManager {notificationManager},
     settingsController {settingsController} {
@@ -174,10 +174,10 @@ void WatchFaceAnalog::UpdateClock() {
 
 bool WatchFaceAnalog::Refresh() {
 
-  batteryPercentRemaining = batteryController.PercentRemaining();
-  if (batteryPercentRemaining.IsUpdated()) {
-    auto batteryPercent = batteryPercentRemaining.Get();
-    lv_label_set_text(batteryIcon, BatteryIcon::GetBatteryIcon(batteryPercent));
+  auto const& battery = GetUpdatedBattery();
+  if (battery.IsUpdated()) {
+    auto const icon = BatteryIcon::GetBatteryIcon(battery.Get().percentRemaining);
+    lv_label_set_text(batteryIcon, icon);
   }
 
   notificationState = notificationManager.AreNewNotificationsAvailable();
