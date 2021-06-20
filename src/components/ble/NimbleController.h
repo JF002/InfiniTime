@@ -69,6 +69,9 @@ namespace Pinetime {
       Pinetime::Controllers::AlertNotificationService& alertService() {
         return anService;
       };
+      Pinetime::Controllers::WeatherService& weather() {
+        return weatherService;
+      };
 
       uint16_t connHandle();
 
