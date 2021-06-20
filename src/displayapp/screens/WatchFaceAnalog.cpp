@@ -10,6 +10,7 @@
 LV_IMG_DECLARE(bg_clock);
 
 using namespace Pinetime::Applications::Screens;
+using namespace Pinetime::DateTime;
 
 #define HOUR_LENGTH   70
 #define MINUTE_LENGTH 90
@@ -27,7 +28,7 @@ static int16_t coordinate_y_relocate(int16_t y) {
 }
 
 WatchFaceAnalog::WatchFaceAnalog(Pinetime::Applications::DisplayApp* app,
-                                 Controllers::DateTime& dateTimeController,
+                                 Controllers::DateTimeController& dateTimeController,
                                  Controllers::Battery& batteryController,
                                  Controllers::Ble& bleController,
                                  Controllers::NotificationManager& notificationManager,
@@ -62,7 +63,7 @@ WatchFaceAnalog::WatchFaceAnalog(Pinetime::Applications::DisplayApp* app,
 
   label_date_day = lv_label_create(lv_scr_act(), NULL);
   lv_obj_set_style_local_text_color(label_date_day, LV_LABEL_PART_MAIN, LV_STATE_DEFAULT, lv_color_hex(0xf0a500));
-  lv_label_set_text_fmt(label_date_day, "%s\n%02i", dateTimeController.DayOfWeekShortToString(), dateTimeController.Day());
+  lv_label_set_text_fmt(label_date_day, "%s\n%02i", DayOfWeekShortToString(currentDayOfWeek), dateTimeController.Day());
   lv_label_set_align(label_date_day, LV_LABEL_ALIGN_CENTER);
   lv_obj_align(label_date_day, NULL, LV_ALIGN_CENTER, 50, 0);
 
@@ -193,7 +194,7 @@ bool WatchFaceAnalog::Refresh() {
 
     if ((month != currentMonth) || (dayOfWeek != currentDayOfWeek) || (day != currentDay)) {
 
-      lv_label_set_text_fmt(label_date_day, "%s\n%02i", dateTimeController.DayOfWeekShortToString(), day);
+      lv_label_set_text_fmt(label_date_day, "%s\n%02i", DayOfWeekShortToString(dayOfWeek), day);
 
       currentMonth = month;
       currentDayOfWeek = dayOfWeek;
