@@ -79,7 +79,8 @@ std::unique_ptr<Screen> Clock::WatchFaceAnalogScreen() {
                                                     bleController,
                                                     notificatioManager,
                                                     settingsController,
-                                                    heartRateController);
+                                                    heartRateController,
+                                                    motionController);
 }
 
 /*
@@ -91,7 +92,8 @@ std::unique_ptr<Screen> Clock::WatchFaceMinimalScreen() {
                                                      bleController,
                                                      notificatioManager,
                                                      settingsController,
-                                                     heartRateController);
+                                                     heartRateController,
+                                                     motionController);
 }
 
 std::unique_ptr<Screen> Clock::WatchFaceCustomScreen() {
@@ -101,6 +103,7 @@ std::unique_ptr<Screen> Clock::WatchFaceCustomScreen() {
                                                     bleController,
                                                     notificatioManager,
                                                     settingsController,
-                                                    heartRateController);
+                                                    heartRateController,
+                                                    motionController);
 }
 */
