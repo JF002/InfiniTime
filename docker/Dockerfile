@@ -25,7 +25,7 @@ RUN apt-get update -qq \
 # Git needed for PROJECT_GIT_COMMIT_HASH variable setting
 
 RUN pip3 install adafruit-nrfutil
-RUN pip3 install -Iv cryptography==3.3
+RUN pip3 install -Iv cryptography==3.3 click==7.1.2
 
 # build.sh knows how to compile
 COPY build.sh /opt/
