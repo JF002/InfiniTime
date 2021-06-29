@@ -410,6 +410,7 @@ list(APPEND SOURCE_FILES
         displayapp/screens/List.cpp
         displayapp/screens/BatteryInfo.cpp
         displayapp/screens/Steps.cpp
+        displayapp/screens/Calculator.cpp
         displayapp/screens/Timer.cpp
 
         ## Settings
@@ -597,6 +598,7 @@ set(INCLUDE_FILES
         displayapp/screens/HeartRate.h
         displayapp/screens/Metronome.h
         displayapp/screens/Motion.h
+        displayapp/screens/Calculator.h
         displayapp/screens/Timer.h
         drivers/St7789.h
         drivers/SpiNorFlash.h

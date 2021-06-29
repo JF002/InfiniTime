@@ -64,7 +64,7 @@ std::unique_ptr<Screen> ApplicationList::CreateScreen2() {
     {"2", Apps::Twos},
     {"M", Apps::Motion},
     {"b", Apps::Metronome},
-    {"", Apps::None},
+    {Symbols::calculator, Apps::Calculator},
   }};
 
   return std::make_unique<Screens::Tile>(1, 2, app, settingsController, batteryController, dateTimeController, applications);
