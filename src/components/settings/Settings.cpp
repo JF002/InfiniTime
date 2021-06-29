@@ -12,6 +12,7 @@ struct SettingsHeader {
 #define HEADER_SIZE sizeof(SettingsHeader)
 
 Settings::Settings(Pinetime::Drivers::SpiNorFlash& spiNorFlash) : spiNorFlash {spiNorFlash} {
+  strncpy(settings.locale, "en-GB", 9);
 }
 
 void Settings::Init() {
@@ -109,3 +110,4 @@ void Settings::SaveSettingsToFlash() {
   SetHeader(true);
   SaveSettingsData();
 }
+
