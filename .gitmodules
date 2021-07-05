@@ -1,3 +1,6 @@
 [submodule "src/libs/lvgl"]
 	path = src/libs/lvgl
 	url = https://github.com/joaquimorg/lvgl.git
+[submodule "src/libs/QCBOR"]
+	path = src/libs/QCBOR
+	url = https://github.com/laurencelundblade/QCBOR.git
