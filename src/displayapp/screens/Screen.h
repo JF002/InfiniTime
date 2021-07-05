@@ -16,7 +16,7 @@ namespace Pinetime {
         bool IsUpdated() const {
           return isUpdated;
         }
-        T const& Get() {
+        T const& Get() const {
           this->isUpdated = false;
           return value;
         } // never expose a non-const lvalue-ref
@@ -29,8 +29,8 @@ namespace Pinetime {
         }
 
       private:
-        T value {};            // NSDMI - default initialise type
-        bool isUpdated {true}; // NSDMI - use brace initilisation
+        T value {};                    // NSDMI - default initialise type
+        mutable bool isUpdated {true}; // NSDMI - use brace initilisation
       };
 
       class Screen {

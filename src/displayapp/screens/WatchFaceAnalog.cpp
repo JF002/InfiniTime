@@ -1,49 +1,53 @@
 #include <libs/lvgl/lvgl.h>
 #include "WatchFaceAnalog.h"
 #include "BatteryIcon.h"
-#include "BleIcon.h"
 #include "Symbols.h"
 #include "NotificationIcon.h"
+#include "components/settings/Settings.h"
 
 #include <cmath>
 
 LV_IMG_DECLARE(bg_clock);
 
 using namespace Pinetime::Applications::Screens;
+using namespace Pinetime::DateTime;
 
-#define HOUR_LENGTH   70
-#define MINUTE_LENGTH 90
-#define SECOND_LENGTH 110
-#define PI            3.14159265358979323846
+namespace {
+
+constexpr auto HOUR_LENGTH = 70;
+constexpr auto MINUTE_LENGTH = 90;
+constexpr auto SECOND_LENGTH = 110;
+constexpr auto PI = 3.14159265358979323846f;
 
 // ##
-static int16_t coordinate_x_relocate(int16_t x) {
-  return ((x) + LV_HOR_RES / 2);
+int16_t coordinate_x_relocate(int16_t x) {
+  return x + LV_HOR_RES / 2;
 }
 
 // ##
-static int16_t coordinate_y_relocate(int16_t y) {
-  return (((y) -LV_HOR_RES / 2) < 0) ? (0 - ((y) -LV_HOR_RES / 2)) : ((y) -LV_HOR_RES / 2);
+int16_t coordinate_y_relocate(int16_t y) {
+  return abs(y - LV_HOR_RES / 2);
+}
+
 }
 
 WatchFaceAnalog::WatchFaceAnalog(Pinetime::Applications::DisplayApp* app,
-                                 Controllers::DateTime& dateTimeController,
-                                 Controllers::Battery& batteryController,
-                                 Controllers::Ble& bleController,
-                                 Controllers::NotificationManager& notificationManager,
-                                 Controllers::Settings& settingsController)
-  : Screen(app),
-    currentDateTime {{}},
-    dateTimeController {dateTimeController},
-    batteryController {batteryController},
-    bleController {bleController},
-    notificationManager {notificationManager},
-    settingsController {settingsController} {
-  settingsController.SetClockFace(1);
-
-  sHour = 99;
-  sMinute = 99;
-  sSecond = 99;
+                                 Controllers::DateTimeController const& dateTimeController,
+                                 Controllers::Battery const& batteryController,
+                                 Controllers::Ble const& bleController,
+                                 Controllers::NotificationManager const& notificationManager,
+                                 Controllers::Settings& settingsController,
+                                 Controllers::HeartRateController const& heartRateController,
+                                 Controllers::MotionController const& motionController)
+  : WatchFaceBase{Pinetime::Controllers::Settings::ClockFace::Analog,
+      app,
+      settingsController,
+      dateTimeController,
+      batteryController,
+      bleController,
+      notificationManager,
+      heartRateController,
+      motionController} {
 
   lv_obj_t* bg_clock_img = lv_img_create(lv_scr_act(), NULL);
   lv_img_set_src(bg_clock_img, &bg_clock);
@@ -59,10 +63,10 @@ WatchFaceAnalog::WatchFaceAnalog(Pinetime::Applications::DisplayApp* app,
   lv_obj_align(notificationIcon, NULL, LV_ALIGN_IN_BOTTOM_LEFT, 8, -4);
 
   // Date - Day / Week day
-
+  auto const& date = GetUpdatedDate().Get();
   label_date_day = lv_label_create(lv_scr_act(), NULL);
   lv_obj_set_style_local_text_color(label_date_day, LV_LABEL_PART_MAIN, LV_STATE_DEFAULT, lv_color_hex(0xf0a500));
-  lv_label_set_text_fmt(label_date_day, "%s\n%02i", dateTimeController.DayOfWeekShortToString(), dateTimeController.Day());
+  lv_label_set_text_fmt(label_date_day, "%s\n%02i", DayOfWeekShortToString(date.dayOfWeek), date.day);
   lv_label_set_align(label_date_day, LV_LABEL_ALIGN_CENTER);
   lv_obj_align(label_date_day, NULL, LV_ALIGN_CENTER, 50, 0);
 
@@ -118,87 +122,89 @@ WatchFaceAnalog::~WatchFaceAnalog() {
 
 void WatchFaceAnalog::UpdateClock() {
 
-  hour = dateTimeController.Hours();
-  minute = dateTimeController.Minutes();
-  second = dateTimeController.Seconds();
+  bool const minute_changed = minute.IsUpdated();
+  if (minute_changed) {
+    auto const angle = minute.Get() * 6 * PI / 180.f;
+    auto const sin_of_angle = sin(angle);
+    auto const cos_of_angle = cos(angle);
 
-  if (sMinute != minute) {
-    minute_point[0].x = coordinate_x_relocate(30 * sin(minute * 6 * PI / 180));
-    minute_point[0].y = coordinate_y_relocate(30 * cos(minute * 6 * PI / 180));
-    minute_point[1].x = coordinate_x_relocate(MINUTE_LENGTH * sin(minute * 6 * PI / 180));
-    minute_point[1].y = coordinate_y_relocate(MINUTE_LENGTH * cos(minute * 6 * PI / 180));
+    minute_point[0].x = coordinate_x_relocate(30 * sin_of_angle);
+    minute_point[0].y = coordinate_y_relocate(30 * cos_of_angle);
+    minute_point[1].x = coordinate_x_relocate(MINUTE_LENGTH * sin_of_angle);
+    minute_point[1].y = coordinate_y_relocate(MINUTE_LENGTH * cos_of_angle);
 
-    minute_point_trace[0].x = coordinate_x_relocate(5 * sin(minute * 6 * PI / 180));
-    minute_point_trace[0].y = coordinate_y_relocate(5 * cos(minute * 6 * PI / 180));
-    minute_point_trace[1].x = coordinate_x_relocate(31 * sin(minute * 6 * PI / 180));
-    minute_point_trace[1].y = coordinate_y_relocate(31 * cos(minute * 6 * PI / 180));
+    minute_point_trace[0].x = coordinate_x_relocate(5 * sin_of_angle);
+    minute_point_trace[0].y = coordinate_y_relocate(5 * cos_of_angle);
+    minute_point_trace[1].x = coordinate_x_relocate(31 * sin_of_angle);
+    minute_point_trace[1].y = coordinate_y_relocate(31 * cos_of_angle);
 
     lv_line_set_points(minute_body, minute_point, 2);
     lv_line_set_points(minute_body_trace, minute_point_trace, 2);
   }
 
-  if (sHour != hour || sMinute != minute) {
-    sHour = hour;
-    sMinute = minute;
-    hour_point[0].x = coordinate_x_relocate(30 * sin((((hour > 12 ? hour - 12 : hour) * 30) + (minute * 0.5)) * PI / 180));
-    hour_point[0].y = coordinate_y_relocate(30 * cos((((hour > 12 ? hour - 12 : hour) * 30) + (minute * 0.5)) * PI / 180));
-    hour_point[1].x = coordinate_x_relocate(HOUR_LENGTH * sin((((hour > 12 ? hour - 12 : hour) * 30) + (minute * 0.5)) * PI / 180));
-    hour_point[1].y = coordinate_y_relocate(HOUR_LENGTH * cos((((hour > 12 ? hour - 12 : hour) * 30) + (minute * 0.5)) * PI / 180));
+  if (hour.IsUpdated() || minute_changed) {
+    auto const h = (hour.Get() % 12) * 30;
+    auto const m = minute.Get() * 0.5f;
+    auto const angle = (h + m) * PI / 180.f;
+    auto const sin_of_angle = sin(angle);
+    auto const cos_of_angle = cos(angle);
 
-    hour_point_trace[0].x = coordinate_x_relocate(5 * sin((((hour > 12 ? hour - 12 : hour) * 30) + (minute * 0.5)) * PI / 180));
-    hour_point_trace[0].y = coordinate_y_relocate(5 * cos((((hour > 12 ? hour - 12 : hour) * 30) + (minute * 0.5)) * PI / 180));
-    hour_point_trace[1].x = coordinate_x_relocate(31 * sin((((hour > 12 ? hour - 12 : hour) * 30) + (minute * 0.5)) * PI / 180));
-    hour_point_trace[1].y = coordinate_y_relocate(31 * cos((((hour > 12 ? hour - 12 : hour) * 30) + (minute * 0.5)) * PI / 180));
+    hour_point[0].x = coordinate_x_relocate(30 * sin_of_angle);
+    hour_point[0].y = coordinate_y_relocate(30 * cos_of_angle);
+    hour_point[1].x = coordinate_x_relocate(HOUR_LENGTH * sin_of_angle);
+    hour_point[1].y = coordinate_y_relocate(HOUR_LENGTH * cos_of_angle);
+
+    hour_point_trace[0].x = coordinate_x_relocate(5 * sin_of_angle);
+    hour_point_trace[0].y = coordinate_y_relocate(5 * cos_of_angle);
+    hour_point_trace[1].x = coordinate_x_relocate(31 * sin_of_angle);
+    hour_point_trace[1].y = coordinate_y_relocate(31 * cos_of_angle);
 
     lv_line_set_points(hour_body, hour_point, 2);
     lv_line_set_points(hour_body_trace, hour_point_trace, 2);
   }
 
-  if (sSecond != second) {
-    sSecond = second;
-    second_point[0].x = coordinate_x_relocate(20 * sin((180 + second * 6) * PI / 180));
-    second_point[0].y = coordinate_y_relocate(20 * cos((180 + second * 6) * PI / 180));
-    second_point[1].x = coordinate_x_relocate(SECOND_LENGTH * sin(second * 6 * PI / 180));
-    second_point[1].y = coordinate_y_relocate(SECOND_LENGTH * cos(second * 6 * PI / 180));
+  if (second.IsUpdated()) {
+    auto const angle = second.Get() * 6 * PI / 180.f;
+    auto const sin_of_angle = sin(angle);
+    auto const cos_of_angle = cos(angle);
+
+    second_point[0].x = coordinate_x_relocate(20 * -sin_of_angle);
+    second_point[0].y = coordinate_y_relocate(20 * -cos_of_angle);
+    second_point[1].x = coordinate_x_relocate(SECOND_LENGTH * sin_of_angle);
+    second_point[1].y = coordinate_y_relocate(SECOND_LENGTH * cos_of_angle);
+
     lv_line_set_points(second_body, second_point, 2);
   }
 }
 
 bool WatchFaceAnalog::Refresh() {
 
-  batteryPercentRemaining = batteryController.PercentRemaining();
-  if (batteryPercentRemaining.IsUpdated()) {
-    auto batteryPercent = batteryPercentRemaining.Get();
-    lv_label_set_text(batteryIcon, BatteryIcon::GetBatteryIcon(batteryPercent));
+  auto const& battery = GetUpdatedBattery();
+  if (battery.IsUpdated()) {
+    auto const icon = BatteryIcon::GetBatteryIcon(battery.Get().percentRemaining);
+    lv_label_set_text(batteryIcon, icon);
   }
 
-  notificationState = notificationManager.AreNewNotificationsAvailable();
-
-  if (notificationState.IsUpdated()) {
-    if (notificationState.Get() == true)
-      lv_label_set_text(notificationIcon, NotificationIcon::GetIcon(true));
-    else
-      lv_label_set_text(notificationIcon, NotificationIcon::GetIcon(false));
+  auto const& notifications = GetUpdatedNotifications();
+  if (notifications.IsUpdated()) {
+    auto const icon = NotificationIcon::GetIcon(notifications.Get().newNotificationsAvailable);
+    lv_label_set_text(notificationIcon, icon);
   }
 
-  currentDateTime = dateTimeController.CurrentDateTime();
-
-  if (currentDateTime.IsUpdated()) {
-
-    month = dateTimeController.Month();
-    day = dateTimeController.Day();
-    dayOfWeek = dateTimeController.DayOfWeek();
+  auto const& time = GetUpdatedTime();
+  if (time.IsUpdated()) {
+    auto const& t = time.Get();
+    hour = t.hour;
+    minute = t.minute;
+    second = t.second;
 
     UpdateClock();
+  }
 
-    if ((month != currentMonth) || (dayOfWeek != currentDayOfWeek) || (day != currentDay)) {
-
-      lv_label_set_text_fmt(label_date_day, "%s\n%02i", dateTimeController.DayOfWeekShortToString(), day);
-
-      currentMonth = month;
-      currentDayOfWeek = dayOfWeek;
-      currentDay = day;
-    }
+  auto const& date = GetUpdatedDate();
+  if (date.IsUpdated()) {
+    auto const& d = date.Get();
+    lv_label_set_text_fmt(label_date_day, "%s\n%02i", DayOfWeekShortToString(d.dayOfWeek), d.day);
   }
 
   return true;

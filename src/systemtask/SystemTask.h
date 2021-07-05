@@ -48,7 +48,7 @@ namespace Pinetime {
                  Components::LittleVgl& lvgl,
                  Controllers::Battery& batteryController,
                  Controllers::Ble& bleController,
-                 Controllers::DateTime& dateTimeController,
+                 Controllers::DateTimeController& dateTimeController,
                  Controllers::TimerController& timerController,
                  Drivers::Watchdog& watchdog,
                  Pinetime::Controllers::NotificationManager& notificationManager,
@@ -90,7 +90,7 @@ namespace Pinetime {
 
 
       Pinetime::Controllers::Ble& bleController;
-      Pinetime::Controllers::DateTime& dateTimeController;
+      Pinetime::Controllers::DateTimeController& dateTimeController;
       Pinetime::Controllers::TimerController& timerController;
       QueueHandle_t systemTasksMsgQueue;
       std::atomic<bool> isSleeping {false};

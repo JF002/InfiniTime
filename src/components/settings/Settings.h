@@ -9,6 +9,7 @@ namespace Pinetime {
   namespace Controllers {
     class Settings {
     public:
+      enum class ClockFace { Digital, Analog };
       enum class ClockType { H24, H12 };
       enum class Vibration { ON, OFF };
       enum class WakeUpMode { None, SingleTap, DoubleTap, RaiseWrist };
@@ -18,12 +19,12 @@ namespace Pinetime {
       void Init();
       void SaveSettings();
 
-      void SetClockFace(uint8_t face) {
+      void SetClockFace(ClockFace face) {
         if (face != settings.clockFace)
           settingsChanged = true;
         settings.clockFace = face;
       };
-      uint8_t GetClockFace() const {
+      ClockFace GetClockFace() const {
         return settings.clockFace;
       };
 
@@ -101,7 +102,7 @@ namespace Pinetime {
         ClockType clockType = ClockType::H24;
         Vibration vibrationStatus = Vibration::ON;
 
-        uint8_t clockFace = 0;
+        ClockFace clockFace = ClockFace::Digital;
 
         uint32_t stepsGoal = 10000;
         uint32_t screenTimeOut = 15000;

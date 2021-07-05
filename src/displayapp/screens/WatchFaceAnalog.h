@@ -4,12 +4,7 @@
 #include <chrono>
 #include <cstdint>
 #include <memory>
-#include "Screen.h"
-#include "ScreenList.h"
-#include "components/datetime/DateTimeController.h"
-#include "components/battery/BatteryController.h"
-#include "components/ble/BleController.h"
-#include "components/ble/NotificationManager.h"
+#include "WatchFaceBase.h"
 
 namespace Pinetime {
   namespace Controllers {
@@ -17,40 +12,34 @@ namespace Pinetime {
     class Battery;
     class Ble;
     class NotificationManager;
+    class HeartRateController;
+    class MotionController;
+    class DateTimeController;
   }
   namespace Applications {
+    class DisplayApp;
+
     namespace Screens {
 
-      class WatchFaceAnalog : public Screen {
+      class WatchFaceAnalog : public WatchFaceBase {
       public:
         WatchFaceAnalog(DisplayApp* app,
-                        Controllers::DateTime& dateTimeController,
-                        Controllers::Battery& batteryController,
-                        Controllers::Ble& bleController,
-                        Controllers::NotificationManager& notificationManager,
-                        Controllers::Settings& settingsController);
+                        Controllers::DateTimeController const& dateTimeController,
+                        Controllers::Battery const& batteryController,
+                        Controllers::Ble const& bleController,
+                        Controllers::NotificationManager const& notificationManager,
+                        Controllers::Settings& settingsController,
+                        Controllers::HeartRateController const& heartRateController,
+                        Controllers::MotionController const& motionController);
 
         ~WatchFaceAnalog() override;
 
         bool Refresh() override;
 
       private:
-        uint8_t sHour, sMinute, sSecond;
-        uint8_t hour;
-        uint8_t minute;
-        uint8_t second;
-
-        Pinetime::Controllers::DateTime::Months month;
-        uint8_t day;
-        Pinetime::Controllers::DateTime::Days dayOfWeek;
-
-        Pinetime::Controllers::DateTime::Months currentMonth = Pinetime::Controllers::DateTime::Months::Unknown;
-        Pinetime::Controllers::DateTime::Days currentDayOfWeek = Pinetime::Controllers::DateTime::Days::Unknown;
-        uint8_t currentDay = 0;
-
-        DirtyValue<float> batteryPercentRemaining {0};
-        DirtyValue<std::chrono::time_point<std::chrono::system_clock, std::chrono::nanoseconds>> currentDateTime;
-        DirtyValue<bool> notificationState {false};
+        DirtyValue<uint8_t> hour{99};
+        DirtyValue<uint8_t> minute{99};
+        DirtyValue<uint8_t> second{99};
 
         lv_obj_t* hour_body;
         lv_obj_t* hour_body_trace;
@@ -75,12 +64,6 @@ namespace Pinetime {
         lv_obj_t* label_date_day;
         lv_obj_t* batteryIcon;
         lv_obj_t* notificationIcon;
-
-        Controllers::DateTime& dateTimeController;
-        Controllers::Battery& batteryController;
-        Controllers::Ble& bleController;
-        Controllers::NotificationManager& notificationManager;
-        Controllers::Settings& settingsController;
 
         void UpdateClock();
       };

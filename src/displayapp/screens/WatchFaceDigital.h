@@ -4,9 +4,8 @@
 #include <chrono>
 #include <cstdint>
 #include <memory>
-#include "Screen.h"
-#include "ScreenList.h"
-#include "components/datetime/DateTimeController.h"
+#include "WatchFaceBase.h"
+#include "components/datetime/DateTime.h"
 
 namespace Pinetime {
   namespace Controllers {
@@ -16,21 +15,24 @@ namespace Pinetime {
     class NotificationManager;
     class HeartRateController;
     class MotionController;
+    class DateTimeController;
   }
 
   namespace Applications {
+    class DisplayApp;
+
     namespace Screens {
 
-      class WatchFaceDigital : public Screen {
+      class WatchFaceDigital : public WatchFaceBase {
       public:
         WatchFaceDigital(DisplayApp* app,
-                         Controllers::DateTime& dateTimeController,
-                         Controllers::Battery& batteryController,
-                         Controllers::Ble& bleController,
-                         Controllers::NotificationManager& notificatioManager,
+                         Controllers::DateTimeController const& dateTimeController,
+                         Controllers::Battery const& batteryController,
+                         Controllers::Ble const& bleController,
+                         Controllers::NotificationManager const& notificationManager,
                          Controllers::Settings& settingsController,
-                         Controllers::HeartRateController& heartRateController,
-                         Controllers::MotionController& motionController);
+                         Controllers::HeartRateController const& heartRateController,
+                         Controllers::MotionController const& motionController);
         ~WatchFaceDigital() override;
 
         bool Refresh() override;
@@ -38,21 +40,13 @@ namespace Pinetime {
         void OnObjectEvent(lv_obj_t* pObj, lv_event_t i);
 
       private:
-        char displayedChar[5];
+        char displayedTime[5] = {};
 
-        uint16_t currentYear = 1970;
-        Pinetime::Controllers::DateTime::Months currentMonth = Pinetime::Controllers::DateTime::Months::Unknown;
-        Pinetime::Controllers::DateTime::Days currentDayOfWeek = Pinetime::Controllers::DateTime::Days::Unknown;
-        uint8_t currentDay = 0;
-
-        DirtyValue<int> batteryPercentRemaining {};
-        DirtyValue<bool> bleState {};
         DirtyValue<std::chrono::time_point<std::chrono::system_clock, std::chrono::nanoseconds>> currentDateTime {};
         DirtyValue<bool> motionSensorOk {};
         DirtyValue<uint32_t> stepCount {};
         DirtyValue<uint8_t> heartbeat {};
         DirtyValue<bool> heartbeatRunning {};
-        DirtyValue<bool> notificationState {};
 
         lv_obj_t* label_time;
         lv_obj_t* label_time_ampm;
@@ -67,14 +61,6 @@ namespace Pinetime {
         lv_obj_t* stepIcon;
         lv_obj_t* stepValue;
         lv_obj_t* notificationIcon;
-
-        Controllers::DateTime& dateTimeController;
-        Controllers::Battery& batteryController;
-        Controllers::Ble& bleController;
-        Controllers::NotificationManager& notificatioManager;
-        Controllers::Settings& settingsController;
-        Controllers::HeartRateController& heartRateController;
-        Controllers::MotionController& motionController;
       };
     }
   }

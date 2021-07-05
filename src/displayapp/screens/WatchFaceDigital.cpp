@@ -7,40 +7,28 @@
 #include "BleIcon.h"
 #include "NotificationIcon.h"
 #include "Symbols.h"
-#include "components/battery/BatteryController.h"
-#include "components/ble/BleController.h"
-#include "components/ble/NotificationManager.h"
-#include "components/heartrate/HeartRateController.h"
-#include "components/motion/MotionController.h"
 #include "components/settings/Settings.h"
-#include "../DisplayApp.h"
 
 using namespace Pinetime::Applications::Screens;
+using namespace Pinetime::DateTime;
 
 WatchFaceDigital::WatchFaceDigital(DisplayApp* app,
-                                   Controllers::DateTime& dateTimeController,
-                                   Controllers::Battery& batteryController,
-                                   Controllers::Ble& bleController,
-                                   Controllers::NotificationManager& notificatioManager,
+                                   Controllers::DateTimeController const& dateTimeController,
+                                   Controllers::Battery const& batteryController,
+                                   Controllers::Ble const& bleController,
+                                   Controllers::NotificationManager const& notificationManager,
                                    Controllers::Settings& settingsController,
-                                   Controllers::HeartRateController& heartRateController,
-                                   Controllers::MotionController& motionController)
-  : Screen(app),
-    currentDateTime {{}},
-    dateTimeController {dateTimeController},
-    batteryController {batteryController},
-    bleController {bleController},
-    notificatioManager {notificatioManager},
-    settingsController {settingsController},
-    heartRateController {heartRateController},
-    motionController {motionController} {
-  settingsController.SetClockFace(0);
-
-  displayedChar[0] = 0;
-  displayedChar[1] = 0;
-  displayedChar[2] = 0;
-  displayedChar[3] = 0;
-  displayedChar[4] = 0;
+                                   Controllers::HeartRateController const& heartRateController,
+                                   Controllers::MotionController const& motionController)
+  : WatchFaceBase{Pinetime::Controllers::Settings::ClockFace::Digital,
+      app,
+      settingsController,
+      dateTimeController,
+      batteryController,
+      bleController,
+      notificationManager,
+      heartRateController,
+      motionController} {
 
   batteryIcon = lv_label_create(lv_scr_act(), nullptr);
   lv_label_set_text(batteryIcon, Symbols::batteryFull);
@@ -107,84 +95,63 @@ WatchFaceDigital::~WatchFaceDigital() {
 }
 
 bool WatchFaceDigital::Refresh() {
-  batteryPercentRemaining = batteryController.PercentRemaining();
-  if (batteryPercentRemaining.IsUpdated()) {
-    auto batteryPercent = batteryPercentRemaining.Get();
-    lv_label_set_text(batteryIcon, BatteryIcon::GetBatteryIcon(batteryPercent));
-    auto isCharging = batteryController.IsCharging() || batteryController.IsPowerPresent();
+  auto const& battery = GetUpdatedBattery();
+  if (battery.IsUpdated()) {
+    auto const& b = battery.Get();
+    lv_label_set_text(batteryIcon, BatteryIcon::GetBatteryIcon(b.percentRemaining));
+    auto const isCharging = b.charging || b.powerPresent;
     lv_label_set_text(batteryPlug, BatteryIcon::GetPlugIcon(isCharging));
   }
 
-  bleState = bleController.IsConnected();
-  if (bleState.IsUpdated()) {
-    if (bleState.Get() == true) {
-      lv_label_set_text(bleIcon, BleIcon::GetIcon(true));
-    } else {
-      lv_label_set_text(bleIcon, BleIcon::GetIcon(false));
-    }
+  auto const& ble = GetUpdatedBle();
+  if (ble.IsUpdated()) {
+    lv_label_set_text(bleIcon, BleIcon::GetIcon(ble.Get().connected));
   }
   lv_obj_align(batteryIcon, lv_scr_act(), LV_ALIGN_IN_TOP_RIGHT, -5, 5);
   lv_obj_align(batteryPlug, batteryIcon, LV_ALIGN_OUT_LEFT_MID, -5, 0);
   lv_obj_align(bleIcon, batteryPlug, LV_ALIGN_OUT_LEFT_MID, -5, 0);
 
-  notificationState = notificatioManager.AreNewNotificationsAvailable();
-  if (notificationState.IsUpdated()) {
-    if (notificationState.Get() == true)
-      lv_label_set_text(notificationIcon, NotificationIcon::GetIcon(true));
-    else
-      lv_label_set_text(notificationIcon, NotificationIcon::GetIcon(false));
+  auto const& notifications = GetUpdatedNotifications();
+  if (notifications.IsUpdated()) {
+    auto const icon = NotificationIcon::GetIcon(notifications.Get().newNotificationsAvailable);
+    lv_label_set_text(notificationIcon, icon);
   }
 
-  currentDateTime = dateTimeController.CurrentDateTime();
-
-  if (currentDateTime.IsUpdated()) {
-    auto newDateTime = currentDateTime.Get();
-
-    auto dp = date::floor<date::days>(newDateTime);
-    auto time = date::make_time(newDateTime - dp);
-    auto yearMonthDay = date::year_month_day(dp);
-
-    auto year = (int) yearMonthDay.year();
-    auto month = static_cast<Pinetime::Controllers::DateTime::Months>((unsigned) yearMonthDay.month());
-    auto day = (unsigned) yearMonthDay.day();
-    auto dayOfWeek = static_cast<Pinetime::Controllers::DateTime::Days>(date::weekday(yearMonthDay).iso_encoding());
-
-    int hour = time.hours().count();
-    auto minute = time.minutes().count();
+  auto const clock_type = GetClockType();
+  auto const& time = GetUpdatedTime();
+  if (time.IsUpdated()) {
+    auto const& t = time.Get();
 
     char minutesChar[3];
-    sprintf(minutesChar, "%02d", static_cast<int>(minute));
+    sprintf(minutesChar, "%02u", t.minute);
 
     char hoursChar[3];
     char ampmChar[3];
-    if (settingsController.GetClockType() == Controllers::Settings::ClockType::H24) {
-      sprintf(hoursChar, "%02d", hour);
-    } else {
-      if (hour == 0 && hour != 12) {
-        hour = 12;
+    auto hour = t.hour;
+    if (clock_type == Controllers::Settings::ClockType::H12) {
+      if (hour > 0 && hour < 12) {
         sprintf(ampmChar, "AM");
-      } else if (hour == 12 && hour != 0) {
-        hour = 12;
-        sprintf(ampmChar, "PM");
-      } else if (hour < 12 && hour != 0) {
-        sprintf(ampmChar, "AM");
-      } else if (hour > 12 && hour != 0) {
-        hour = hour - 12;
+      } else {
         sprintf(ampmChar, "PM");
       }
-      sprintf(hoursChar, "%02d", hour);
+      if (hour == 0) {
+        hour = 12;
+      } else if (hour > 12) {
+        hour -= 12;
+      }
     }
+    sprintf(hoursChar, "%02u", hour);
 
-    if (hoursChar[0] != displayedChar[0] || hoursChar[1] != displayedChar[1] || minutesChar[0] != displayedChar[2] ||
-        minutesChar[1] != displayedChar[3]) {
-      displayedChar[0] = hoursChar[0];
-      displayedChar[1] = hoursChar[1];
-      displayedChar[2] = minutesChar[0];
-      displayedChar[3] = minutesChar[1];
+    if (hoursChar[0] != displayedTime[0] || hoursChar[1] != displayedTime[1] || minutesChar[0] != displayedTime[2] ||
+        minutesChar[1] != displayedTime[3]) {
+      displayedTime[0] = hoursChar[0];
+      displayedTime[1] = hoursChar[1];
+      displayedTime[2] = minutesChar[0];
+      displayedTime[3] = minutesChar[1];
 
       char timeStr[6];
 
-      if (settingsController.GetClockType() == Controllers::Settings::ClockType::H12) {
+      if (clock_type == Controllers::Settings::ClockType::H12) {
         lv_label_set_text(label_time_ampm, ampmChar);
         if (hoursChar[0] == '0') {
           hoursChar[0] = ' ';
@@ -194,36 +161,35 @@ bool WatchFaceDigital::Refresh() {
       sprintf(timeStr, "%c%c:%c%c", hoursChar[0], hoursChar[1], minutesChar[0], minutesChar[1]);
       lv_label_set_text(label_time, timeStr);
 
-      if (settingsController.GetClockType() == Controllers::Settings::ClockType::H12) {
+      if (clock_type == Controllers::Settings::ClockType::H12) {
         lv_obj_align(label_time, lv_scr_act(), LV_ALIGN_IN_RIGHT_MID, 0, 0);
       } else {
         lv_obj_align(label_time, lv_scr_act(), LV_ALIGN_CENTER, 0, 0);
       }
     }
-
-    if ((year != currentYear) || (month != currentMonth) || (dayOfWeek != currentDayOfWeek) || (day != currentDay)) {
-      char dateStr[22];
-      if (settingsController.GetClockType() == Controllers::Settings::ClockType::H24) {
-        sprintf(dateStr, "%s %d %s %d", dateTimeController.DayOfWeekShortToString(), day, dateTimeController.MonthShortToString(), year);
-      } else {
-        sprintf(dateStr, "%s %s %d %d", dateTimeController.DayOfWeekShortToString(), dateTimeController.MonthShortToString(), day, year);
-      }
-      lv_label_set_text(label_date, dateStr);
-      lv_obj_align(label_date, lv_scr_act(), LV_ALIGN_CENTER, 0, 60);
-
-      currentYear = year;
-      currentMonth = month;
-      currentDayOfWeek = dayOfWeek;
-      currentDay = day;
-    }
   }
 
-  heartbeat = heartRateController.HeartRate();
-  heartbeatRunning = heartRateController.State() != Controllers::HeartRateController::States::Stopped;
-  if (heartbeat.IsUpdated() || heartbeatRunning.IsUpdated()) {
-    if (heartbeatRunning.Get()) {
+  auto const& date = GetUpdatedDate();
+  if (date.IsUpdated()) {
+    auto const& d = date.Get();
+    char dateStr[22];
+
+    if (clock_type == Controllers::Settings::ClockType::H24) {
+      sprintf(dateStr, "%s %d %s %d", DayOfWeekShortToString(d.dayOfWeek), d.day, MonthShortToString(d.month), d.year);
+    } else {
+      sprintf(dateStr, "%s %s %d %d", DayOfWeekShortToString(d.dayOfWeek), MonthShortToString(d.month), d.day, d.year);
+    }
+    lv_label_set_text(label_date, dateStr);
+    lv_obj_align(label_date, lv_scr_act(), LV_ALIGN_CENTER, 0, 60);
+  }
+
+  auto const& heartRate = GetUpdatedHeartRate();
+  if (heartRate.IsUpdated()) {
+    auto const& hr = heartRate.Get();
+
+    if (hr.running) {
       lv_obj_set_style_local_text_color(heartbeatIcon, LV_LABEL_PART_MAIN, LV_STATE_DEFAULT, lv_color_hex(0xCE1B1B));
-      lv_label_set_text_fmt(heartbeatValue, "%d", heartbeat.Get());
+      lv_label_set_text_fmt(heartbeatValue, "%d", hr.rate);
     } else {
       lv_obj_set_style_local_text_color(heartbeatIcon, LV_LABEL_PART_MAIN, LV_STATE_DEFAULT, lv_color_hex(0x1B1B1B));
       lv_label_set_text_static(heartbeatValue, "");
@@ -233,10 +199,9 @@ bool WatchFaceDigital::Refresh() {
     lv_obj_align(heartbeatValue, heartbeatIcon, LV_ALIGN_OUT_RIGHT_MID, 5, 0);
   }
 
-  stepCount = motionController.NbSteps();
-  motionSensorOk = motionController.IsSensorOk();
-  if (stepCount.IsUpdated() || motionSensorOk.IsUpdated()) {
-    lv_label_set_text_fmt(stepValue, "%lu", stepCount.Get());
+  auto const& motion = GetUpdatedMotion();
+  if (motion.IsUpdated()) {
+    lv_label_set_text_fmt(stepValue, "%lu", motion.Get().stepCount);
     lv_obj_align(stepValue, lv_scr_act(), LV_ALIGN_IN_BOTTOM_RIGHT, -5, -2);
     lv_obj_align(stepIcon, stepValue, LV_ALIGN_OUT_LEFT_MID, -5, 0);
   }
