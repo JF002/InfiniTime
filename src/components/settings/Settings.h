@@ -9,6 +9,7 @@ namespace Pinetime {
   namespace Controllers {
     class Settings {
     public:
+      enum class SettingPushButtonAction { BACK, WATCHFACE };
       enum class ClockType { H24, H12 };
       enum class Vibration { ON, OFF };
       enum class WakeUpMode { None, SingleTap, DoubleTap, RaiseWrist };
@@ -40,6 +41,16 @@ namespace Pinetime {
       uint8_t GetSettingsMenu() const {
         return settingsMenu;
       };
+
+      void SetSettingPushButtonAction(SettingPushButtonAction pushButtonAction) {
+        if (pushButtonAction != settings.pushButtonAction)
+          settingsChanged = true;
+        settings.pushButtonAction = pushButtonAction;
+      };
+      SettingPushButtonAction GetSettingPushButtonAction() const {
+        return settings.pushButtonAction;
+      };
+
 
       void SetClockType(ClockType clocktype) {
         if (clocktype != settings.clockType)
@@ -109,6 +120,7 @@ namespace Pinetime {
         WakeUpMode wakeUpMode = WakeUpMode::None;
 
         Controllers::BrightnessController::Levels brightLevel = Controllers::BrightnessController::Levels::Medium;
+        SettingPushButtonAction pushButtonAction = SettingPushButtonAction::BACK;
       };
 
       SettingsData settings;
