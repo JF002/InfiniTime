@@ -38,10 +38,12 @@ namespace Pinetime {
       };
       Notification::Id nextId {0};
 
+      void Pop(Notification::Id id);
       void Push(Notification&& notif);
       Notification GetLastNotification();
       Notification GetNext(Notification::Id id);
       Notification GetPrevious(Notification::Id id);
+      Notification Refresh(Notification::Id id);
       bool ClearNewNotificationFlag();
       bool AreNewNotificationsAvailable();
       bool IsVibrationEnabled();

@@ -15,6 +15,7 @@ Notifications::Notifications(DisplayApp* app,
   : Screen(app), notificationManager {notificationManager}, alertNotificationService {alertNotificationService}, mode {mode} {
   notificationManager.ClearNewNotificationFlag();
   auto notification = notificationManager.GetLastNotification();
+
   if (notification.valid) {
     currentId = notification.id;
     currentItem = std::make_unique<NotificationItem>(notification.Title(),
@@ -95,6 +96,39 @@ bool Notifications::OnTouchEvent(Pinetime::Applications::TouchEvents event) {
                                                        alertNotificationService);
     }
       return true;
+    case Pinetime::Applications::TouchEvents::DoubleTap: {
+      if (!validDisplay)
+        return false;
+
+      Controllers::NotificationManager::Notification nextNotification;
+      nextNotification = notificationManager.GetPrevious(currentId);
+      if (nextNotification.valid) {
+        app->SetFullRefresh(DisplayApp::FullRefreshDirections::Down);
+      } else {
+        nextNotification = notificationManager.GetNext(currentId);
+        if (nextNotification.valid)
+          app->SetFullRefresh(DisplayApp::FullRefreshDirections::Up);
+      }
+
+      notificationManager.Pop(currentId);
+      nextNotification = notificationManager.Refresh(nextNotification.id);
+
+      if (nextNotification.valid) {
+        currentId = nextNotification.id;
+        currentItem.reset(nullptr);
+        currentItem = std::make_unique<NotificationItem>(nextNotification.Title(),
+                                                         nextNotification.Message(),
+                                                         nextNotification.index,
+                                                         nextNotification.category,
+                                                         notificationManager.NbNotifications(),
+                                                         mode,
+                                                         alertNotificationService);
+      } else {
+        app->SetFullRefresh(DisplayApp::FullRefreshDirections::Up);
+        running = false;
+      }
+    }
+      return false;
     case Pinetime::Applications::TouchEvents::SwipeUp: {
       Controllers::NotificationManager::Notification nextNotification;
       if (validDisplay)
@@ -169,7 +203,7 @@ Notifications::NotificationItem::NotificationItem(const char* title,
   lv_cont_set_fit(container1, LV_FIT_NONE);
 
   lv_obj_t* alert_count = lv_label_create(lv_scr_act(), nullptr);
-  lv_label_set_text_fmt(alert_count, "%i/%i", notifNr, notifNb);
+  lv_label_set_text_fmt(alert_count, "%i/%i", notifNb - notifNr + 1, notifNb);
   lv_obj_align(alert_count, NULL, LV_ALIGN_IN_TOP_RIGHT, 0, 16);
 
   lv_obj_t* alert_type = lv_label_create(lv_scr_act(), nullptr);
