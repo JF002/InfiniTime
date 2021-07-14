@@ -23,7 +23,6 @@ void Battery::Update() {
     return;
   }
   // Non blocking read
-  samples = 0;
   isReading = true;
   SaadcInit();
 
@@ -42,7 +41,7 @@ void Battery::SaadcInit() {
                                                  .resistor_n = NRF_SAADC_RESISTOR_DISABLED,
                                                  .gain = NRF_SAADC_GAIN1_5,
                                                  .reference = NRF_SAADC_REFERENCE_INTERNAL,
-                                                 .acq_time = NRF_SAADC_ACQTIME_3US,
+                                                 .acq_time = NRF_SAADC_ACQTIME_40US,
                                                  .mode = NRF_SAADC_MODE_SINGLE_ENDED,
                                                  .burst = NRF_SAADC_BURST_ENABLED,
                                                  .pin_p = batteryVoltageAdcInput,
@@ -65,17 +64,16 @@ void Battery::SaadcEventHandler(nrfx_saadc_evt_t const* p_event) {
     // reference_voltage is 0.6V
     // p_event->data.done.p_buffer[0] = (adc_voltage / reference_voltage) * 1024
     voltage = p_event->data.done.p_buffer[0] * 6000 / 1024;
-    percentRemaining = (voltage - battery_min) * 100 / (battery_max - battery_min);
-    percentRemaining = std::max(percentRemaining, 0);
-    percentRemaining = std::min(percentRemaining, 100);
-    percentRemainingBuffer.Insert(percentRemaining);
 
-    samples++;
-    if (samples > percentRemainingSamples) {
-      nrfx_saadc_uninit();
-      isReading = false;
+    if (voltage > battery_max) {
+      percentRemaining = 100;
+    } else if (voltage < battery_min) {
+      percentRemaining = 0;
     } else {
-      nrfx_saadc_sample();
+      percentRemaining = (voltage - battery_min) * 100 / (battery_max - battery_min);
     }
+
+    nrfx_saadc_uninit();
+    isReading = false;
   }
 }
