@@ -42,6 +42,7 @@
 #include "displayapp/screens/settings/SettingWakeUp.h"
 #include "displayapp/screens/settings/SettingDisplay.h"
 #include "displayapp/screens/settings/SettingSteps.h"
+#include "displayapp/screens/settings/SettingFavoriteApp.h"
 
 #include "libs/lv_conf.h"
 
@@ -192,6 +193,13 @@ void DisplayApp::Refresh() {
               case TouchEvents::SwipeRight:
                 LoadApp(Apps::QuickSettings, DisplayApp::FullRefreshDirections::RightAnim);
                 break;
+              case TouchEvents::SwipeLeft:
+                favoriteApp = settingsController.GetFavoriteApp();
+                if (favoriteApp == Apps::None)
+                  LoadApp(Apps::SettingFavoriteApp, DisplayApp::FullRefreshDirections::LeftAnim);
+                else
+                  LoadApp(favoriteApp, DisplayApp::FullRefreshDirections::LeftAnim);
+                break;                
               case TouchEvents::DoubleTap:
                 PushMessageToSystemTask(System::Messages::GoToSleep);
                 break;
@@ -330,6 +338,10 @@ void DisplayApp::LoadApp(Apps app, DisplayApp::FullRefreshDirections direction) 
       break;
     case Apps::SettingSteps:
       currentScreen = std::make_unique<Screens::SettingSteps>(this, settingsController);
+      ReturnApp(Apps::Settings, FullRefreshDirections::Down, TouchEvents::SwipeDown);
+      break;
+    case Apps::SettingFavoriteApp:
+      currentScreen = std::make_unique<Screens::SettingFavoriteApp>(this, settingsController);
       ReturnApp(Apps::Settings, FullRefreshDirections::Down, TouchEvents::SwipeDown);
       break;
     case Apps::BatteryInfo:
