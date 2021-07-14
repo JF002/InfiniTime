@@ -11,8 +11,13 @@ extern lv_font_t jetbrains_mono_bold_20;
 Notifications::Notifications(DisplayApp* app,
                              Pinetime::Controllers::NotificationManager& notificationManager,
                              Pinetime::Controllers::AlertNotificationService& alertNotificationService,
+                             Controllers::MotorController& motorController,
                              Modes mode)
-  : Screen(app), notificationManager {notificationManager}, alertNotificationService {alertNotificationService}, mode {mode} {
+    : Screen(app),
+      notificationManager{notificationManager},
+      alertNotificationService{alertNotificationService},
+      motorController{motorController},
+      mode{mode} {
   notificationManager.ClearNewNotificationFlag();
   auto notification = notificationManager.GetLastNotification();
   if (notification.valid) {
@@ -23,7 +28,10 @@ Notifications::Notifications(DisplayApp* app,
                                                      notification.category,
                                                      notificationManager.NbNotifications(),
                                                      mode,
-                                                     alertNotificationService);
+                                                     alertNotificationService,
+                                                     motorController,
+                                                     &timeoutTickCountEnd,
+                                                     &timeoutTickCountStart);
     validDisplay = true;
   } else {
     currentItem = std::make_unique<NotificationItem>("Notification",
@@ -32,7 +40,10 @@ Notifications::Notifications(DisplayApp* app,
                                                      notification.category,
                                                      notificationManager.NbNotifications(),
                                                      Modes::Preview,
-                                                     alertNotificationService);
+                                                     alertNotificationService,
+                                                     motorController,
+                                                     &timeoutTickCountEnd,
+                                                     &timeoutTickCountStart);
   }
 
   if (mode == Modes::Preview) {
@@ -54,7 +65,7 @@ Notifications::~Notifications() {
 }
 
 bool Notifications::Refresh() {
-  if (mode == Modes::Preview) {
+  if (mode == Modes::Preview && !currentItem->timeoutOnHold) {
     auto tick = xTaskGetTickCount();
     int32_t pos = 240 - ((tick - timeoutTickCountStart) / ((timeoutTickCountEnd - timeoutTickCountStart) / 240));
     if (pos < 0)
@@ -63,7 +74,9 @@ bool Notifications::Refresh() {
     timeoutLinePoints[1].x = pos;
     lv_line_set_points(timeoutLine, timeoutLinePoints, 2);
   }
-
+  //make sure we stop any vibrations before exiting
+  if (!running)
+    motorController.stopRunning();
   return running;
 }
 
@@ -92,7 +105,10 @@ bool Notifications::OnTouchEvent(Pinetime::Applications::TouchEvents event) {
                                                        previousNotification.category,
                                                        notificationManager.NbNotifications(),
                                                        mode,
-                                                       alertNotificationService);
+                                                       alertNotificationService,
+                                                       motorController,
+                                                       &timeoutTickCountEnd,
+                                                       &timeoutTickCountStart);
     }
       return true;
     case Pinetime::Applications::TouchEvents::SwipeUp: {
@@ -117,7 +133,10 @@ bool Notifications::OnTouchEvent(Pinetime::Applications::TouchEvents event) {
                                                        nextNotification.category,
                                                        notificationManager.NbNotifications(),
                                                        mode,
-                                                       alertNotificationService);
+                                                       alertNotificationService,
+                                                       motorController,
+                                                       &timeoutTickCountEnd,
+                                                       &timeoutTickCountStart);
     }
       return true;
     case Pinetime::Applications::TouchEvents::LongTap: {
@@ -152,9 +171,12 @@ Notifications::NotificationItem::NotificationItem(const char* title,
                                                   Controllers::NotificationManager::Categories category,
                                                   uint8_t notifNb,
                                                   Modes mode,
-                                                  Pinetime::Controllers::AlertNotificationService& alertNotificationService)
-  : notifNr {notifNr}, notifNb {notifNb}, mode {mode}, alertNotificationService {alertNotificationService} {
-
+                                                  Pinetime::Controllers::AlertNotificationService& alertNotificationService,
+                                                  Controllers::MotorController& motorController,
+                                                  uint32_t* timeoutEnd,
+                                                  uint32_t* timeoutStart)
+    : notifNr{notifNr}, notifNb{notifNb}, mode{mode}, alertNotificationService{alertNotificationService},
+      motorController{motorController}, timeoutEnd{timeoutEnd}, timeoutStart{timeoutStart} {
   lv_obj_t* container1 = lv_cont_create(lv_scr_act(), NULL);
 
   lv_obj_set_style_local_bg_color(container1, LV_CONT_PART_MAIN, LV_STATE_DEFAULT, lv_color_hex(0x222222));
@@ -237,6 +259,7 @@ Notifications::NotificationItem::NotificationItem(const char* title,
       label_mute = lv_label_create(bt_mute, nullptr);
       lv_label_set_text(label_mute, Symbols::volumMute);
       lv_obj_set_style_local_bg_color(bt_mute, LV_LABEL_PART_MAIN, LV_STATE_DEFAULT, LV_COLOR_GRAY);
+      timeoutOnHold = true;
     } break;
   }
 
@@ -250,23 +273,31 @@ Notifications::NotificationItem::NotificationItem(const char* title,
 void Notifications::NotificationItem::OnAcceptIncomingCall(lv_event_t event) {
   if (event != LV_EVENT_CLICKED)
     return;
-
+  callPreviewInteraction();
   alertNotificationService.AcceptIncomingCall();
 }
 
 void Notifications::NotificationItem::OnMuteIncomingCall(lv_event_t event) {
   if (event != LV_EVENT_CLICKED)
     return;
-
+  callPreviewInteraction();
   alertNotificationService.MuteIncomingCall();
 }
 
 void Notifications::NotificationItem::OnRejectIncomingCall(lv_event_t event) {
   if (event != LV_EVENT_CLICKED)
     return;
-
+  callPreviewInteraction();
   alertNotificationService.RejectIncomingCall();
 }
+
+inline void Notifications::NotificationItem::callPreviewInteraction() {
+  *timeoutStart = xTaskGetTickCount();
+  *timeoutEnd = *timeoutStart + (5 * 1024);
+  timeoutOnHold = false;
+  motorController.stopRunning();
+}
+
 
 Notifications::NotificationItem::~NotificationItem() {
   lv_obj_clean(lv_scr_act());

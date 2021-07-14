@@ -5,6 +5,7 @@
 #include <memory>
 #include "Screen.h"
 #include "components/ble/NotificationManager.h"
+#include "components/motor/MotorController.h"
 
 namespace Pinetime {
   namespace Controllers {
@@ -19,6 +20,7 @@ namespace Pinetime {
         explicit Notifications(DisplayApp* app,
                                Pinetime::Controllers::NotificationManager& notificationManager,
                                Pinetime::Controllers::AlertNotificationService& alertNotificationService,
+                               Controllers::MotorController& motorController,
                                Modes mode);
         ~Notifications() override;
 
@@ -33,7 +35,10 @@ namespace Pinetime {
                            Controllers::NotificationManager::Categories,
                            uint8_t notifNb,
                            Modes mode,
-                           Pinetime::Controllers::AlertNotificationService& alertNotificationService);
+                           Pinetime::Controllers::AlertNotificationService& alertNotificationService,
+                           Controllers::MotorController& motorController,
+                           uint32_t* timeoutEnd,
+                           uint32_t* timeoutStart);
           ~NotificationItem();
           bool Refresh() {
             return false;
@@ -41,8 +46,11 @@ namespace Pinetime {
           void OnAcceptIncomingCall(lv_event_t event);
           void OnMuteIncomingCall(lv_event_t event);
           void OnRejectIncomingCall(lv_event_t event);
-
+          
+          bool timeoutOnHold = false;
         private:
+          void callPreviewInteraction();
+          
           uint8_t notifNr = 0;
           uint8_t notifNb = 0;
           char pageText[4];
@@ -58,8 +66,11 @@ namespace Pinetime {
           lv_obj_t* label_mute;
           lv_obj_t* label_reject;
           lv_obj_t* bottomPlaceholder;
+          uint32_t* timeoutEnd;
+          uint32_t* timeoutStart;
           Modes mode;
           Pinetime::Controllers::AlertNotificationService& alertNotificationService;
+          Controllers::MotorController& motorController;
         };
 
       private:
@@ -72,6 +83,7 @@ namespace Pinetime {
         Modes mode = Modes::Normal;
         std::unique_ptr<NotificationItem> currentItem;
         Controllers::NotificationManager::Notification::Id currentId;
+        Controllers::MotorController& motorController;
         bool validDisplay = false;
 
         lv_point_t timeoutLinePoints[2] {{0, 1}, {239, 1}};

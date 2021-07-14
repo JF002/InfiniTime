@@ -259,9 +259,8 @@ void SystemTask::Work() {
         case Messages::OnTimerDone:
           if (isSleeping && !isWakingUp) {
             GoToRunning();
-          }
           motorController.SetDuration(35);
-          displayApp.PushMessage(Pinetime::Applications::Display::Messages::TimerDone);
+          displayApp.PushMessage(Pinetime::Applications::Display::Messages::NewNotification);
           break;
         case Messages::BleConnected:
           ReloadIdleTimer();
