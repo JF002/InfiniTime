@@ -43,6 +43,7 @@
 #include "drivers/TwiMaster.h"
 #include "drivers/Cst816s.h"
 #include "systemtask/SystemTask.h"
+#include "buttonhandler/ButtonHandlerTask.h"
 
 #if NRF_LOG_ENABLED
   #include "logging/NrfLogger.h"
@@ -108,6 +109,7 @@ void ble_manager_set_ble_connection_callback(void (*connection)());
 void ble_manager_set_ble_disconnection_callback(void (*disconnection)());
 static constexpr uint8_t pinTouchIrq = 28;
 static constexpr uint8_t pinPowerPresentIrq = 19;
+static constexpr uint8_t pinButton = 13;
 
 Pinetime::Controllers::HeartRateController heartRateController;
 Pinetime::Applications::HeartRateTask heartRateApp(heartRateSensor, heartRateController);
@@ -118,6 +120,7 @@ Pinetime::Drivers::WatchdogView watchdogView(watchdog);
 Pinetime::Controllers::NotificationManager notificationManager;
 Pinetime::Controllers::MotionController motionController;
 Pinetime::Controllers::TimerController timerController;
+Pinetime::Controllers::ButtonHandler buttonHandler;
 
 Pinetime::Controllers::FS fs {spiNorFlash};
 Pinetime::Controllers::Settings settingsController {fs};
@@ -161,21 +164,18 @@ Pinetime::System::SystemTask systemTask(spi,
                                         fs);
 
 void nrfx_gpiote_evt_handler(nrfx_gpiote_pin_t pin, nrf_gpiote_polarity_t action) {
-  if (pin == pinTouchIrq) {
-    systemTask.OnTouchEvent();
-    return;
-  }
-
   BaseType_t xHigherPriorityTaskWoken = pdFALSE;
 
-  if (pin == pinPowerPresentIrq and action == NRF_GPIOTE_POLARITY_TOGGLE) {
+  if (pin == pinTouchIrq) {
+    systemTask.OnTouchEvent();
+  } else if (pin == pinPowerPresentIrq and action == NRF_GPIOTE_POLARITY_TOGGLE) {
     xTimerStartFromISR(debounceChargeTimer, &xHigherPriorityTaskWoken);
     portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
-    return;
+  } else if (pin == pinButton) {
+    // This activates on button release as well due to bouncing
+    xTimerStartFromISR(debounceTimer, &xHigherPriorityTaskWoken);
+    portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
   }
-
-  xTimerStartFromISR(debounceTimer, &xHigherPriorityTaskWoken);
-  portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
 }
 
 void DebounceTimerChargeCallback(TimerHandle_t xTimer) {
@@ -183,9 +183,8 @@ void DebounceTimerChargeCallback(TimerHandle_t xTimer) {
   systemTask.PushMessage(Pinetime::System::Messages::OnChargingEvent);
 }
 
-void DebounceTimerCallback(TimerHandle_t xTimer) {
-  xTimerStop(xTimer, 0);
-  systemTask.OnButtonPushed();
+void DebounceTimerCallback(TimerHandle_t /*unused*/) {
+  buttonHandler.WakeUp();
 }
 
 void SPIM0_SPIS0_TWIM0_TWIS0_SPI0_TWI0_IRQHandler(void) {
@@ -300,8 +299,8 @@ int main(void) {
 
   nrf_drv_clock_init();
 
-  debounceTimer = xTimerCreate("debounceTimer", 200, pdFALSE, (void*) 0, DebounceTimerCallback);
-  debounceChargeTimer = xTimerCreate("debounceTimerCharge", 200, pdFALSE, (void*) 0, DebounceTimerChargeCallback);
+  debounceTimer = xTimerCreate("debounceTimer", 10, pdFALSE, nullptr, DebounceTimerCallback);
+  debounceChargeTimer = xTimerCreate("debounceTimerCharge", 200, pdFALSE, nullptr, DebounceTimerChargeCallback);
 
   // retrieve version stored by bootloader
   Pinetime::BootloaderVersion::SetVersion(NRF_TIMER2->CC[0]);
@@ -309,6 +308,10 @@ int main(void) {
   lvgl.Init();
 
   systemTask.Start();
+
+  buttonHandler.Register(&systemTask);
+  buttonHandler.Start();
+
   nimble_port_init();
 
   vTaskStartScheduler();

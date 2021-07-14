@@ -68,6 +68,8 @@ namespace Pinetime {
       void PushMessage(Messages msg);
 
       void OnButtonPushed();
+      void OnButtonDoubleClicked();
+      void OnButtonLongPressed();
       void OnTouchEvent();
 
       void OnIdle();
